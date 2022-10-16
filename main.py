@@ -136,20 +136,34 @@ class Render(object):
 
     def glRenderObject(self, obj, scale_factor, translate_factor):
         for face in obj.faces:
-            f1 = face[0][0] - 1
-            f2 = face[1][0] - 1
-            f3 = face[2][0] - 1
-            # f4 = face[3][0] - 1
+            if len(face) == 3:
+                f1 = face[0][0] - 1
+                f2 = face[1][0] - 1
+                f3 = face[2][0] - 1
 
-            v1 =  r.transform_vertex(obj.vertices[f1], scale_factor, translate_factor)
-            v2 =  r.transform_vertex(obj.vertices[f2], scale_factor, translate_factor)
-            v3 =  r.transform_vertex(obj.vertices[f3], scale_factor, translate_factor)
-            # v4 =  r.transform_vertex(cube.vertices[f4], scale_factor, translate_factor)
+                v1 =  r.transform_vertex(obj.vertices[f1], scale_factor, translate_factor)
+                v2 =  r.transform_vertex(obj.vertices[f2], scale_factor, translate_factor)
+                v3 =  r.transform_vertex(obj.vertices[f3], scale_factor, translate_factor)
 
-            r.line(v1[0], v1[1], v2[0], v2[1])
-            r.line(v2[0], v2[1], v3[0], v3[1])
-            r.line(v3[0], v3[1], v1[0], v1[1])
-            # r.line(v4[0], v4[1], v1[0], v1[1]) 
+                r.line(v1[0], v1[1], v2[0], v2[1])
+                r.line(v2[0], v2[1], v3[0], v3[1])
+                r.line(v3[0], v3[1], v1[0], v1[1])
+
+            if len(face) == 4:
+                f1 = face[0][0] - 1
+                f2 = face[1][0] - 1
+                f3 = face[2][0] - 1
+                f4 = face[3][0] - 1
+
+                v1 =  r.transform_vertex(obj.vertices[f1], scale_factor, translate_factor)
+                v2 =  r.transform_vertex(obj.vertices[f2], scale_factor, translate_factor)
+                v3 =  r.transform_vertex(obj.vertices[f3], scale_factor, translate_factor)
+                v4 =  r.transform_vertex(obj.vertices[f4], scale_factor, translate_factor)
+
+                r.line(v1[0], v1[1], v2[0], v2[1])
+                r.line(v2[0], v2[1], v3[0], v3[1])
+                r.line(v3[0], v3[1], v1[0], v1[1])
+                r.line(v4[0], v4[1], v1[0], v1[1]) 
 
     def glColor(self, r, g, b):
         self.vertex_color = color(r, g, b)
