@@ -3,6 +3,8 @@
 # SR2
 
 import struct
+from cube import Obj
+import main
 
 # Métodos de escritura
 def char(c): 
@@ -21,7 +23,7 @@ def color(r, g, b):
 
 class Render(object):
 
-    def glInit(self, filename = 'sr1.bmp'):
+    def glInit(self, filename = 'sr2.bmp'):
         self.filename = filename 
         self.width = 100 
         self.height = 100
@@ -29,7 +31,7 @@ class Render(object):
         self.viewport_y = 0 
         self.viewport_width = 100 
         self.viewport_height = 100
-        self.current_color = color(0, 0, 0) # por defecto negro
+        self.current_color = color(255, 255, 255) # por defecto blanco
         self.vertex_color = color(200, 0, 0) # por defecto rojo
         self.framebuffer = []
         self.glClear()
@@ -39,40 +41,118 @@ class Render(object):
         self.height = height
 
     def glViewPort(self, x, y, width, height):
-        self.viewport_x = y
-        self.viewport_y = width
-        self.viewport_width = width
-        self.viewport_height = height
+
+        if self.width < x + width or self.height < y + height:
+            print("[!] El viewport debe estar dentro de las medidas de la pantalla")
+            self.viewport_x = 0
+            self.viewport_y = 0
+            self.viewport_width = self.width
+            self.viewport_height = self.height
+            self.glClear()
+        else:
+            self.viewport_x = x
+            self.viewport_y = y
+            self.viewport_width = width
+            self.viewport_height = height
+            self.glClear()
 
     def glClear(self):
         self.framebuffer= [
-            [self.current_color for x in range(self.width)]
+            [color(0, 0, 0) for x in range(self.width)]
             for y in range(self.height)
         ]
 
+        for x in range(self.width):
+            for y in range(self.height):
+                if x >= self.viewport_x and x <= self.viewport_width and y >= self.viewport_y and y <= self.viewport_height:
+                    self.framebuffer[x][y] = self.current_color 
+
     def glClearColor(self, r, g, b):
-        if r in range(0, 1) and g in range(0, 1) and b in range(0, 1): 
-            self.current_color = color(r, g, b)
-        else:
-            print("[!][glClearColor] Los valores del color rgb deben estar entre  0 y 1")
+        self.current_color = color(r, g, b)
 
     def glVertex(self, x, y):
 
         # convertir coordenadas normalizadas a cordenadas del dispositivo
-        half_size_width = self.width / 2
-        half_size_height = self.height / 2
+        half_size_width = self.viewport_width / 2
+        half_size_height = self.viewport_height / 2
 
-        coord_x = int((( x + 1 ) * half_size_width  ) + self.viewport_x)
-        coord_y = int((( y + 1 ) * half_size_height ) + self.viewport_y)
+        coord_x = int((( x + 1 ) * half_size_width ))
+        coord_y = int((( y + 1 ) * half_size_height ))
 
-        self.framebuffer[x][y] = self.vertex_color
+        self.framebuffer[coord_x][coord_y] = self.vertex_color
 
+    def point(self, x, y):
+        if 0 < x < self.width and 0 < y < self.height:
+            self.framebuffer[x][y] = self.vertex_color
+
+    def line(self, x0, y0, x1, y1):
+        x0 = round(x0)
+        y0 = round(y0)
+        x1 = round(x1)
+        y1 = round(y1)
+
+        dy = abs(y1 - y0)
+        dx = abs(x1 - x0)
+
+        steep = dy > dx
+
+        if steep:
+            x0, y0 =  y0, x0
+            x1, y1 =  y1, x1
+
+        if x0 > x1:
+            x0, x1 = x1, x0 
+            y0, y1 = y1, y0 
+
+        dy = abs(y1 - y0)
+        dx = abs(x1 - x0)
+
+        offset = 0
+        threshold = dx
+        y =  y0
+
+        for x in range(x0, x1 + 1):
+
+            
+            if steep:
+                r.point(y, x)
+            else:
+                r.point(x, y)
+
+            # offset += (dy/dx) * dx * 2
+            offset += dy * 2
+
+            if offset > threshold:
+                y += 1 if y0 < y1 else  -1
+                # threshold += 1 * dx * 2
+                threshold += dx * 2
+
+
+    def transform_vertex(self, vertex, scale, translate):
+        return [
+            (vertex[0] * scale[0]) + translate[0],
+            (vertex[1] * scale[1]) + translate[1]
+        ]
+
+    def glRenderObject(self, obj, scale_factor, translate_factor):
+        for face in obj.faces:
+            f1 = face[0][0] - 1
+            f2 = face[1][0] - 1
+            f3 = face[2][0] - 1
+            # f4 = face[3][0] - 1
+
+            v1 =  r.transform_vertex(obj.vertices[f1], scale_factor, translate_factor)
+            v2 =  r.transform_vertex(obj.vertices[f2], scale_factor, translate_factor)
+            v3 =  r.transform_vertex(obj.vertices[f3], scale_factor, translate_factor)
+            # v4 =  r.transform_vertex(cube.vertices[f4], scale_factor, translate_factor)
+
+            r.line(v1[0], v1[1], v2[0], v2[1])
+            r.line(v2[0], v2[1], v3[0], v3[1])
+            r.line(v3[0], v3[1], v1[0], v1[1])
+            # r.line(v4[0], v4[1], v1[0], v1[1]) 
 
     def glColor(self, r, g, b):
-        if r in range(0, 1) and g in range(0, 1) and b in range(0, 1): 
-             self.vertex_color = color(r, g, b)
-        else:
-            print("[!][glColor] Los valores del color rgb deben estar entre  0 y 1")
+        self.vertex_color = color(r, g, b)
 
     def glFinish(self):
         f = open(self.filename, 'bw')
@@ -102,16 +182,21 @@ class Render(object):
 
         for x in range(self.height):
             for y in range(self.width):
-                f.write(self.framebuffer[x][y])
+                f.write(self.framebuffer[y][x])
 
 
 # IMPLEMENTACION
 r = Render()
-r.glInit('sr1-point.bpm')
-r.glCreateWindow(1024, 1024)
-r.glViewPort(50,50, 900, 900)
+r.glInit('sr2-line.bmp')
+r.glCreateWindow(1000, 1000)
+r.glViewPort(0,0, 1000, 1000)
+r.glClearColor(0, 0, 0)
 r.glClear()
-r.glClearColor(1, 0, 0)
-r.glVertex(100, 100)
-r.glColor(1, 1, 1)
+
+house = Obj('casa.obj')
+scale_factor = (100, 100)
+translate_factor = (500, 500)
+r.glRenderObject(house, scale_factor, translate_factor)
+
+
 r.glFinish()
